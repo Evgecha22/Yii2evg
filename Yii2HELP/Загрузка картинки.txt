@@ -1,0 +1,73 @@
+---- Универсальный код для загрузки картинки ----
+1)Создаем кнопку загрузки новой картинки для этого Modules>admin>views>Auto(название сущности)>view.php
+2)Копируем код кнопки <?= Html::a('Add Photo', ['set-image', 'id' => $model->id], ['class' => 'btn btn-info']) ?> (Внимание: set-image - название матода контроллера который будет отвечать за загрузку картинки)
+3)Для этого переходим в modules>admin>controllers>AutoController.php создаем метод загрузки картинки: 
+public function actionSetImage($id) { метод получает id с адрессной строки модели с которым мы работаем 
+        //die("Загрузка картинки ".$id);
+        return $this->render('image', ['model'=>$model]); Делаем редирект на файл вида шаблона который нужно создать в котором будет отображаться загрузка картики
+    }
+4)Создаем файл image.php в modules>admin>views>auto>image.php в него копируем содержимое файла _form.php
+5)Удаляем все лишнее и оставляем/изменяем 
+<?= $form->field($model, 'image(название модели)')->fileInput(меняем на fileInput)(['maxlength' => true]) ?>
+6)Для обработки события нажатия кнопки создаем модель загрузки картики -> AutoController.php
+$model= new ImageUpload; получаем модель загрузки картики в котором будет описана логика загрузки картики
+return $this->render('image', ['model'=>$model]); 
+7)Создаем класс ImageUpload который будет отвечать за логику загружаемой картики для этого идем в папку models и создаем файл на основании класса - ImageUpload.php
+8)Класс делаем наследником от класса Model - class ImageUpload extends Model для этого нужно use yii\base\Model; 
+9)Создаем свойство public $image;
+10)Проверить подключение к файлу ImageUpload - use app\models\ImageUpload; 
+11)Проверяем если форма отправлена
+if (Yii::$app->request->isPost){
+die("knopka najita"); проверка
+$file=UploadedFile::getInstance($model,'image'); - UploadedFile класс для загрузки файла на сервер, метод getInstance получает с формы в модель файл и возращает его в переменную файл 
+print_r($file); смотрим
+ $model->imageUpload($file); Модели передаем полученый файл с формы но в классе модели нужно создать метод imageUpload который будет получать загружаемый файл и сохранять в укразаную папку сайта
+}
+12)В модели ImageUpload.php создаем метод 
+ public function imageUpload(UploadedFile $file){ метод получает файл с контроллера
+       // print_r($file); // проверяем что файл передан модели
+       // die;
+        $file->saveAs(Yii::getAlias('@web').'upload/'.$file->name); сохраняет файл в укразаную папку сайта и переименовует файл Внимание подключить класс use Yii; use yii\base\Model; use yii\web\UploadedFile; и в корневой папке веб создать папку upload web>upload
+    }
+13)Записиваем название файла в таблицу БД для этого в контроллере визываем метод saveImage модели авто $auto->saveImage('название файла') матод нужно создать
+ public function actionSetImage($id) {
+        //die("Загрузка картинки ".$id);
+        $model= new ImageUpload;
+        if (Yii::$app->request->isPost){
+            $auto=$this->findModel($id);
+            
+            $file=UploadedFile::getInstance($model,'image');
+            $auto->saveImage($model->imageUpload($file)); // в сущности МОДЕЛИ АВТО создаем saveImage который сохранит название файла в БД переходим в models>Auto.php
+           
+         // print_r($file);
+         // die;
+            // после того как получили файл передаем его модели в которой создаем метод UploadImage($file)
+
+        }
+        return $this->render('image', ['model'=>$model]);
+    }
+14)Создание матода saveImage в модели models>Auto.php
+public function saveImage($fileName){
+        $this->photo=$fileName; // присваеваем свойство название файла
+        return $this->save(false); // метод save сохраняет название в БД параметр false нужен для того чтобы отключить валидацыю то есть чтоб не сработал метод rules
+    }
+15) Удаление старой картинки при загрузки новой (редактирование картинок)
+Когда загружаеться новая картинка то старую нужно удалить, для этого нужно получить название старой картинки
+Для этого идем в контроллер сущности и вторым параметром методу UploadFile передаем название файла которое вытащим из строки БД 
+ $auto->saveImage($model->imageUpload($file,$auto->photo)); // в сущности МОДЕЛИ АВТО создаем saveImage который сохранит название файла в БД переходим в models>Auto.php
+15,2) Идем в файл ImageUpload(модель) и находим метод UploadFile и создаем ему второй параметр который будет передавать название старой картинки 
+public function imageUpload(UploadedFile $file,$currentimage)
+15,3) Перед удаление файла нужно убедится что он существует и если он существует то мы его удаляем 
+if (file_exists(Yii::getAlias('@web') . 'upload/' . $currentimage)) { // фунцыя file_exists возращает true если файл существует
+                @unlink(Yii::getAlias('@web') . 'upload/' . $currentimage); // удаляем старый файл
+            }
+16) Контролируем загрузку файла 1: Убеждаемся что загружается файл и 2:контролируем типы загружаемых файлов
+Создаем метод валидации Rules
+public function rules()
+    {
+        return [
+            [['image'],'required'], // required проверка на пустоту
+            [['image'],'file','extensions'=>'jpg,png'] // extensions проверяем наличие типов файла
+
+        ];
+    }

@@ -1,0 +1,16 @@
+cd modules/php/PHP-X.X.X
+// Выбираем папку с версией php
+$ php -r "readfile('https://getcomposer.org/installer');" |php
+// Устанавливаем компосер
+php composer.phar -V
+// Проверяем версию установленного компосера
+результат версии,дату и время установки
+$ echo @php "%~dp0composer.phar" %*>composer.bat
+// Сокращаем обращения к компосеру без php и без composer.phar команда проверки версии будет выглядеть так: composer -V
+// Далее установаливаем Yii2 
+переходим в папку проекта 
+cd domains
+// устанавливаем проект
+composer create-project --prefer-dist yiisoft/yii2-app-basic название проекта
+Папка должна быть создана 
+Настраиваем .htaccess (гуглим в инете для yii2) и убиваем папку /web в ОпенСервере
